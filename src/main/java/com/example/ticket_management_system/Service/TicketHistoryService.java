@@ -1,5 +1,7 @@
 package com.example.ticket_management_system.Service;
 
+import com.example.ticket_management_system.Exception.TicketNotFoundException;
+import com.example.ticket_management_system.Exception.UserNotFoundException;
 import com.example.ticket_management_system.Model.Priority;
 import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.TicketHistory;
@@ -56,10 +58,10 @@ public class TicketHistoryService {
     public List<TicketHistory> getHistory(Long ticketId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         ticketAccessService.verifyCustomerOrAssignedAgent(ticket, user);
 

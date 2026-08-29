@@ -3,6 +3,9 @@ package com.example.ticket_management_system.Service;
 
 import com.example.ticket_management_system.DTOs.CreateTicketRequest;
 import com.example.ticket_management_system.DTOs.UpdateTicketRequest;
+import com.example.ticket_management_system.Exception.InvalidStatusTransitionException;
+import com.example.ticket_management_system.Exception.TicketNotFoundException;
+import com.example.ticket_management_system.Exception.UserNotFoundException;
 import com.example.ticket_management_system.Model.Role;
 import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.TicketStatus;
@@ -36,7 +39,7 @@ public class TicketService {
         String email= SecurityContextHolder.getContext().getAuthentication().getName();
 
         User customer = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         Ticket ticket = Ticket.builder()
                 .title(request.getTitle())
@@ -52,10 +55,10 @@ public class TicketService {
     public Ticket getTicketById(Long ticketId) throws AccessDeniedException {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         // Ownership check — customers can only view their own tickets
         if (currentUser.getRole() == Role.CUSTOMER && !ticket.getCustomerId().equals(currentUser.getId())) {
@@ -68,7 +71,7 @@ public class TicketService {
     public List<Ticket> getMyTickets() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         return ticketRepository.findByCustomerId(currentUser.getId());
     }
@@ -76,10 +79,10 @@ public class TicketService {
     public Ticket closeTicket(Long ticketId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (!ticket.getCustomerId().equals(currentUser.getId())) {
             throw new AccessDeniedException("You do not have permission to close this ticket");
@@ -88,7 +91,7 @@ public class TicketService {
         TicketStatus oldStatus = ticket.getStatus();
         TicketStatus newStatus = TicketStatus.CLOSED;
         if (!statusValidator.isValidTransition(oldStatus, newStatus)) {
-            throw new IllegalStateException("Invalid status transition: " + oldStatus + " -> " + newStatus);
+            throw new InvalidStatusTransitionException("Invalid status transition: " + oldStatus + " -> " + newStatus);
         }
 
         ticket.setStatus(newStatus);
@@ -101,10 +104,10 @@ public class TicketService {
     public Ticket cancelTicket(Long ticketId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (!ticket.getCustomerId().equals(currentUser.getId())) {
             throw new AccessDeniedException("You do not have permission to cancel this ticket");
@@ -113,7 +116,7 @@ public class TicketService {
         TicketStatus oldStatus = ticket.getStatus();
         TicketStatus newStatus = TicketStatus.CANCELLED;
         if (!statusValidator.isValidTransition(oldStatus, newStatus)) {
-            throw new IllegalStateException("Invalid status transition: " + oldStatus + " -> " + newStatus);
+            throw new InvalidStatusTransitionException("Invalid status transition: " + oldStatus + " -> " + newStatus);
         }
 
         ticket.setStatus(newStatus);
@@ -126,17 +129,17 @@ public class TicketService {
     public Ticket updateTicket(Long ticketId, UpdateTicketRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
 
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (!ticket.getCustomerId().equals(currentUser.getId())) {
             throw new AccessDeniedException("You do not have permission to edit this ticket");
         }
 
         if (ticket.getStatus() != TicketStatus.OPEN) {
-            throw new IllegalStateException("Ticket can only be edited while OPEN");
+            throw new InvalidStatusTransitionException("Ticket can only be edited while OPEN");
         }
 
         ticket.setTitle(request.getTitle());

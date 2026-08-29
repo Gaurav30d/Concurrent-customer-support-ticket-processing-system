@@ -1,6 +1,7 @@
 package com.example.ticket_management_system.Service;
 
 import com.example.ticket_management_system.DTOs.CreateAgentRequest;
+import com.example.ticket_management_system.Exception.EmailAlreadyExistsException;
 import com.example.ticket_management_system.Model.Role;
 import com.example.ticket_management_system.Model.User;
 import com.example.ticket_management_system.Repository.UserRepository;
@@ -22,7 +23,7 @@ public class AdminService {
 
     public User createAgent(CreateAgentRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("Email already registered");
+            throw new EmailAlreadyExistsException("Email already registered");
         }
 
         User agent = new User();

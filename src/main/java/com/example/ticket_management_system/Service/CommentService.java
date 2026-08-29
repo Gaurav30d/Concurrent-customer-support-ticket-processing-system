@@ -1,5 +1,7 @@
 package com.example.ticket_management_system.Service;
 
+import com.example.ticket_management_system.Exception.TicketNotFoundException;
+import com.example.ticket_management_system.Exception.UserNotFoundException;
 import com.example.ticket_management_system.Model.Comment;
 import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.User;
@@ -32,13 +34,13 @@ public class CommentService {
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
     }
 
     public Comment addComment(Long ticketId, String message) {
         User user = getCurrentUser();
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         ticketAccessService.verifyCustomerOrAssignedAgent(ticket, user);
 
@@ -54,7 +56,7 @@ public class CommentService {
     public List<Comment> getComments(Long ticketId) {
         User user = getCurrentUser();
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         ticketAccessService.verifyCustomerOrAssignedAgent(ticket, user);
 

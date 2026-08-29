@@ -1,6 +1,7 @@
 package com.example.ticket_management_system.Service;
 
 import com.example.ticket_management_system.DTOs.RegisterRequest;
+import com.example.ticket_management_system.Exception.UserNotFoundException;
 import com.example.ticket_management_system.Model.Role;
 import com.example.ticket_management_system.Model.User;
 import com.example.ticket_management_system.Repository.UserRepository;
@@ -36,7 +37,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalStateException("Invalid email or password"));
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new IllegalStateException("Invalid email or password");
+            throw new UserNotFoundException("Invalid email or password");
         }
         return user;
     }

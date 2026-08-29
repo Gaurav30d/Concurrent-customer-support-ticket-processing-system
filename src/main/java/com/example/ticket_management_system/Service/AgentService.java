@@ -1,5 +1,9 @@
 package com.example.ticket_management_system.Service;
 
+import com.example.ticket_management_system.Exception.InvalidStatusTransitionException;
+import com.example.ticket_management_system.Exception.TicketAlreadyAssignedException;
+import com.example.ticket_management_system.Exception.TicketNotFoundException;
+import com.example.ticket_management_system.Exception.UserNotFoundException;
 import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.TicketStatus;
 import com.example.ticket_management_system.Model.User;
@@ -30,7 +34,7 @@ public class AgentService {
     protected User getCurrentAgent(){
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(email)
-                .orElseThrow(()->new IllegalStateException("Authenticated user not found"));
+                .orElseThrow(()->new UserNotFoundException("Authenticated user not found"));
     }
 
     public List<Ticket> getAvailableTickets() {
@@ -45,13 +49,13 @@ public class AgentService {
     public Ticket claimTicket(Long ticketId) {
         User agent = getCurrentAgent();
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (ticket.getAssignedAgentId() != null) {
-            throw new IllegalStateException("Ticket is already assigned to another agent");
+            throw new InvalidStatusTransitionException("Only OPEN tickets can be claimed");
         }
         if (ticket.getStatus() != TicketStatus.OPEN) {
-            throw new IllegalStateException("Only OPEN tickets can be claimed");
+            throw new InvalidStatusTransitionException("Only OPEN tickets can be claimed");
         }
 
         TicketStatus oldStatus = ticket.getStatus();
@@ -66,13 +70,13 @@ public class AgentService {
     public Ticket updateStatus(Long ticketId, TicketStatus newStatus) {
         User agent = getCurrentAgent();
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (!agent.getId().equals(ticket.getAssignedAgentId())) {
             throw new AccessDeniedException("You can only update tickets assigned to you");
         }
         if (!statusValidator.isValidTransition(ticket.getStatus(), newStatus)) {
-            throw new IllegalStateException("Invalid status transition: " + ticket.getStatus() + " -> " + newStatus);
+            throw new InvalidStatusTransitionException("Invalid status transition: " + ticket.getStatus() + " -> " + newStatus);
         }
 
         TicketStatus oldStatus = ticket.getStatus();
