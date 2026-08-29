@@ -1,0 +1,68 @@
+package com.example.ticket_management_system.Service;
+
+import com.example.ticket_management_system.Model.Priority;
+import com.example.ticket_management_system.Model.Ticket;
+import com.example.ticket_management_system.Model.TicketHistory;
+import com.example.ticket_management_system.Model.TicketStatus;
+import com.example.ticket_management_system.Model.User;
+import com.example.ticket_management_system.Repository.TicketHistoryRepository;
+import com.example.ticket_management_system.Repository.TicketRepository;
+import com.example.ticket_management_system.Repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class TicketHistoryService {
+
+    private final TicketHistoryRepository ticketHistoryRepository;
+    private final TicketRepository ticketRepository;
+    private final UserRepository userRepository;
+    private final TicketAccessService ticketAccessService;
+
+    public TicketHistoryService(TicketHistoryRepository ticketHistoryRepository,
+                                TicketRepository ticketRepository,
+                                UserRepository userRepository,
+                                TicketAccessService ticketAccessService) {
+        this.ticketHistoryRepository = ticketHistoryRepository;
+        this.ticketRepository = ticketRepository;
+        this.userRepository = userRepository;
+        this.ticketAccessService = ticketAccessService;
+    }
+
+    public void recordStatusChange(Long ticketId, Long changedBy, TicketStatus oldStatus, TicketStatus newStatus, String action) {
+        TicketHistory history = TicketHistory.builder()
+                .ticketId(ticketId)
+                .changedBy(changedBy)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
+                .action(action)
+                .build();
+        ticketHistoryRepository.save(history);
+    }
+
+    public void recordPriorityChange(Long ticketId, Long changedBy, Priority oldPriority, Priority newPriority, String action) {
+        TicketHistory history = TicketHistory.builder()
+                .ticketId(ticketId)
+                .changedBy(changedBy)
+                .oldPriority(oldPriority)
+                .newPriority(newPriority)
+                .action(action)
+                .build();
+        ticketHistoryRepository.save(history);
+    }
+
+    public List<TicketHistory> getHistory(Long ticketId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new IllegalStateException("Ticket not found"));
+
+        ticketAccessService.verifyCustomerOrAssignedAgent(ticket, user);
+
+        return ticketHistoryRepository.findByTicketIdOrderByTimestampAsc(ticketId);
+    }
+}
