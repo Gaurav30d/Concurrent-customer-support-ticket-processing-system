@@ -12,8 +12,8 @@ public class TicketHistoryResponse {
     private Long changedBy;
     private TicketStatus oldStatus;
     private TicketStatus newStatus;
-    private Priority oldPriority;
-    private Priority newPriority;
+    private TicketPriority oldPriority;
+    private TicketPriority newPriority;
     private String action;
     private LocalDateTime timestamp;
 

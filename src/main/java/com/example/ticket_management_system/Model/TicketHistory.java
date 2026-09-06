@@ -29,10 +29,10 @@ public class TicketHistory {
     private TicketStatus newStatus;
 
     @Enumerated(EnumType.STRING)
-    private Priority oldPriority;
+    private TicketPriority oldPriority;
 
     @Enumerated(EnumType.STRING)
-    private Priority newPriority;
+    private TicketPriority newPriority;
 
     @Column(nullable = false)
     private String action;

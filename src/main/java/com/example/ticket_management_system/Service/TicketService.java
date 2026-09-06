@@ -12,6 +12,8 @@ import com.example.ticket_management_system.Model.TicketStatus;
 import com.example.ticket_management_system.Model.User;
 import com.example.ticket_management_system.Repository.TicketRepository;
 import com.example.ticket_management_system.Repository.UserRepository;
+import com.example.ticket_management_system.concurrency.TicketQueueManager;
+import com.example.ticket_management_system.concurrency.TicketTask;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,12 +29,14 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final TicketStatusValidator statusValidator;
+    private final TicketQueueManager queueManager;
 
-    public TicketService(TicketHistoryService ticketHistoryService, TicketRepository ticketRepository, UserRepository userRepository, TicketStatusValidator statusValidator) {
+    public TicketService(TicketHistoryService ticketHistoryService, TicketRepository ticketRepository, UserRepository userRepository, TicketStatusValidator statusValidator, TicketQueueManager queueManager) {
         this.ticketHistoryService = ticketHistoryService;
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.statusValidator = statusValidator;
+        this.queueManager = queueManager;
     }
 
     public Ticket createTicket(CreateTicketRequest request) {
@@ -50,7 +54,9 @@ public class TicketService {
                 .status(TicketStatus.OPEN)
                 .build();
 
-        return ticketRepository.save(ticket);
+        Ticket saved = ticketRepository.save(ticket);
+        queueManager.enqueue(new TicketTask(saved.getId(), saved.getPriority()));
+        return saved;
     }
     public Ticket getTicketById(Long ticketId) throws AccessDeniedException {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();

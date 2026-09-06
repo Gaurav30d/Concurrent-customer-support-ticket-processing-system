@@ -2,11 +2,7 @@ package com.example.ticket_management_system.Service;
 
 import com.example.ticket_management_system.Exception.TicketNotFoundException;
 import com.example.ticket_management_system.Exception.UserNotFoundException;
-import com.example.ticket_management_system.Model.Priority;
-import com.example.ticket_management_system.Model.Ticket;
-import com.example.ticket_management_system.Model.TicketHistory;
-import com.example.ticket_management_system.Model.TicketStatus;
-import com.example.ticket_management_system.Model.User;
+import com.example.ticket_management_system.Model.*;
 import com.example.ticket_management_system.Repository.TicketHistoryRepository;
 import com.example.ticket_management_system.Repository.TicketRepository;
 import com.example.ticket_management_system.Repository.UserRepository;
@@ -44,7 +40,7 @@ public class TicketHistoryService {
         ticketHistoryRepository.save(history);
     }
 
-    public void recordPriorityChange(Long ticketId, Long changedBy, Priority oldPriority, Priority newPriority, String action) {
+    public void recordPriorityChange(Long ticketId, Long changedBy, TicketPriority oldPriority, TicketPriority newPriority, String action) {
         TicketHistory history = TicketHistory.builder()
                 .ticketId(ticketId)
                 .changedBy(changedBy)

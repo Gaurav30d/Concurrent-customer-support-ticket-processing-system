@@ -62,4 +62,8 @@ public class Ticket {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ProcessingStatus processingStatus=ProcessingStatus.QUEUED;
 }

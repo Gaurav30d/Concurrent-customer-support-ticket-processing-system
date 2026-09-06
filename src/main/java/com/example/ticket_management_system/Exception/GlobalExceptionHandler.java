@@ -66,4 +66,8 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(LocalDateTime.now(), status.value(), status.getReasonPhrase(), message);
         return new ResponseEntity<>(error, status);
     }
+    @ExceptionHandler(TicketConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(TicketConflictException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
 }

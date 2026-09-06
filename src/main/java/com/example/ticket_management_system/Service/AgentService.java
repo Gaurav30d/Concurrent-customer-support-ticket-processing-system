@@ -1,9 +1,6 @@
 package com.example.ticket_management_system.Service;
 
-import com.example.ticket_management_system.Exception.InvalidStatusTransitionException;
-import com.example.ticket_management_system.Exception.TicketAlreadyAssignedException;
-import com.example.ticket_management_system.Exception.TicketNotFoundException;
-import com.example.ticket_management_system.Exception.UserNotFoundException;
+import com.example.ticket_management_system.Exception.*;
 import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.TicketStatus;
 import com.example.ticket_management_system.Model.User;
@@ -52,7 +49,7 @@ public class AgentService {
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
 
         if (ticket.getAssignedAgentId() != null) {
-            throw new InvalidStatusTransitionException("Only OPEN tickets can be claimed");
+            throw new TicketAlreadyAssignedException("Ticket is already assigned to another agent");
         }
         if (ticket.getStatus() != TicketStatus.OPEN) {
             throw new InvalidStatusTransitionException("Only OPEN tickets can be claimed");
@@ -61,10 +58,16 @@ public class AgentService {
         TicketStatus oldStatus = ticket.getStatus();
         ticket.setAssignedAgentId(agent.getId());
         ticket.setStatus(TicketStatus.ASSIGNED);
-        Ticket saved = ticketRepository.save(ticket);
+
+        Ticket saved;
+        try {
+            saved = ticketRepository.save(ticket);
+        } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
+            throw new TicketConflictException(
+                    "This ticket was just claimed by another agent. Please refresh and try a different ticket.");
+        }
 
         ticketHistoryService.recordStatusChange(ticketId, agent.getId(), oldStatus, TicketStatus.ASSIGNED, "TICKET_CLAIMED");
-
         return saved;
     }
     public Ticket updateStatus(Long ticketId, TicketStatus newStatus) {
