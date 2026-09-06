@@ -7,14 +7,19 @@ import com.example.ticket_management_system.Repository.TicketRepository;
 import java.sql.SQLOutput;
 
 public class TicketWorker implements Runnable{
-
+    
     private final TicketQueueManager queueManager;
     private final TicketRepository ticketRepository;
+    private final ActiveProcessingTracker tracker;
+    private final ProcessingStats stats;
     private final int workerId;
 
-    public TicketWorker(TicketQueueManager queueManager, TicketRepository ticketRepository, int workerId) {
+    public TicketWorker(TicketQueueManager queueManager, TicketRepository ticketRepository,
+                        ActiveProcessingTracker tracker, ProcessingStats stats, int workerId) {
         this.queueManager = queueManager;
         this.ticketRepository = ticketRepository;
+        this.tracker = tracker;
+        this.stats = stats;
         this.workerId = workerId;
     }
     @Override
@@ -33,26 +38,24 @@ public class TicketWorker implements Runnable{
     }
 
     private void processTicket(Long ticketId) {
-        Ticket ticket=ticketRepository.findById(ticketId).orElse(null);
-        if(ticket==null){
-            System.out.println("Worker- "+workerId+ ": ticket " + ticketId + " no longer exists, skipping.");
-            return;
-        }
+        Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
+        if (ticket == null) return;
 
-        System.out.println("Worker- "+workerId+ ": processing ticket " + ticketId + " ...");
+        tracker.markProcessing(ticketId, "Worker-" + workerId);
         ticket.setProcessingStatus(ProcessingStatus.PROCESSING);
         ticketRepository.save(ticket);
 
-        try{
+        try {
             Thread.sleep(1000);
-
             ticket.setProcessingStatus(ProcessingStatus.PROCESSED);
             ticketRepository.save(ticket);
-            System.out.println("Worker-" + workerId + " finished ticket " + ticketId);
-        }catch (Exception e){
+            stats.incrementProcessed();
+        } catch (Exception e) {
             ticket.setProcessingStatus(ProcessingStatus.FAILED);
             ticketRepository.save(ticket);
-            System.out.println("Worker-" + workerId+ ": failed to process ticket " + ticketId + ": " + e.getMessage());
+            stats.incrementFailed();
+        } finally {
+            tracker.markDone(ticketId);
         }
     }
 }

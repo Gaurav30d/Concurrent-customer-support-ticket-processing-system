@@ -15,25 +15,28 @@ public class WorkerManager {
 
     private final TicketQueueManager queueManager;
     private final TicketRepository ticketRepository;
+    private final ActiveProcessingTracker tracker;
+    private final ProcessingStats stats;
     private ExecutorService executorService;
 
 
-    public WorkerManager(TicketQueueManager queueManager, TicketRepository ticketRepository) {
+    public WorkerManager(TicketQueueManager queueManager, TicketRepository ticketRepository, ActiveProcessingTracker tracker, ProcessingStats stats) {
         this.queueManager = queueManager;
         this.ticketRepository = ticketRepository;
+        this.tracker = tracker;
+        this.stats = stats;
     }
 
-    @PostConstruct //as soon as the app starts we want this
-    public void startWorkers(){
-        executorService= Executors.newFixedThreadPool(WORKER_COUNT);
-        for(int i=1;i<=WORKER_COUNT;i++){
-            executorService.submit(new TicketWorker(queueManager,ticketRepository,i));
+    @PostConstruct
+    public void startWorkers() {
+        executorService = Executors.newFixedThreadPool(WORKER_COUNT);
+        for (int i = 1; i <= WORKER_COUNT; i++) {
+            executorService.submit(new TicketWorker(queueManager, ticketRepository, tracker, stats, i));
         }
-        System.out.println("Started "+ WORKER_COUNT+ " ticket workers.");
     }
+
     @PreDestroy
-    public void stopWorkers(){
-        System.out.println("Shutting down ticket workers..");
-        executorService.shutdown();
+    public void stopWorkers() {
+        executorService.shutdownNow();
     }
 }

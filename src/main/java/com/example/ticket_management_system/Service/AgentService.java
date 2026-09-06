@@ -20,12 +20,14 @@ public class AgentService {
     private final UserRepository userRepository;
     private final TicketStatusValidator statusValidator;
     private final TicketHistoryService ticketHistoryService;
+    private final NotificationService notificationService;
 
-    public AgentService(TicketRepository ticketRepository, UserRepository userRepository, TicketStatusValidator statusValidator, TicketHistoryService ticketHistoryService) {
+    public AgentService(TicketRepository ticketRepository, UserRepository userRepository, TicketStatusValidator statusValidator, TicketHistoryService ticketHistoryService, NotificationService notificationService) {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.statusValidator = statusValidator;
         this.ticketHistoryService = ticketHistoryService;
+        this.notificationService = notificationService;
     }
 
     protected User getCurrentAgent(){
@@ -90,6 +92,10 @@ public class AgentService {
         Ticket saved = ticketRepository.save(ticket);
 
         ticketHistoryService.recordStatusChange(ticketId, agent.getId(), oldStatus, newStatus, "STATUS_UPDATED");
+
+        if (newStatus == TicketStatus.RESOLVED) {
+            notificationService.sendTicketResolvedNotification(ticketId, saved.getCustomerId());
+        }
 
         return saved;
     }
