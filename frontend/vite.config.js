@@ -21,7 +21,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: path.resolve(__dirname, '../src/main/resources/static'),
+    outDir: process.env.BUILD_SPRING ? path.resolve(__dirname, '../src/main/resources/static') : 'dist',
     emptyOutDir: true
   }
 });

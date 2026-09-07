@@ -41,9 +41,10 @@ class ConcurrencyTelemetryClient {
 
   start() {
     // Attempt WebSocket connection
+    const wsUrl = import.meta.env.VITE_WS_URL || '/ws';
     try {
       this.stompClient = new Client({
-        webSocketFactory: () => new SockJS('/ws'),
+        webSocketFactory: () => new SockJS(wsUrl),
         reconnectDelay: 5000,
         debug: () => {}, // silence debug logs
         onConnect: () => {
