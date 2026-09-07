@@ -1,9 +1,6 @@
 package com.example.ticket_management_system.Controller;
 
-import com.example.ticket_management_system.DTOs.CreateTicketRequest;
-import com.example.ticket_management_system.DTOs.TicketHistoryResponse;
-import com.example.ticket_management_system.DTOs.TicketResponse;
-import com.example.ticket_management_system.DTOs.UpdateTicketRequest;
+import com.example.ticket_management_system.DTOs.*;
 import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.TicketHistory;
 import com.example.ticket_management_system.Service.TicketHistoryService;
@@ -12,7 +9,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -70,6 +66,12 @@ public class TicketController {
     public ResponseEntity<List<TicketHistoryResponse>> getHistory(@PathVariable Long id) {
         List<TicketHistory> history = ticketHistoryService.getHistory(id);
         return ResponseEntity.ok(history.stream().map(TicketHistoryResponse::fromEntity).toList());
+    }
+
+    @PutMapping("/{id}/rate")
+    public ResponseEntity<TicketResponse> rateTicket(@PathVariable Long id, @Valid @RequestBody RateTicketRequest request) {
+        Ticket ticket = ticketService.rateTicket(id, request);
+        return ResponseEntity.ok(TicketResponse.fromEntity(ticket));
     }
 
 

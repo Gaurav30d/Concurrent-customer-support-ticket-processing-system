@@ -15,6 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 @SpringBootTest
 public class RaceConditionTest {
 
@@ -26,13 +29,24 @@ public class RaceConditionTest {
     @Test
     void multipleAgentsClaimingSameTicketSimultaneously() throws InterruptedException, ExecutionException {
 
+        // --- Setup: ensure a customer exists ---
+        String customerEmail = "race-customer@test.com";
+        User customer = userRepository.findByEmail(customerEmail).orElseGet(() -> {
+            User c = new User();
+            c.setName("Race Customer");
+            c.setEmail(customerEmail);
+            c.setPassword(passwordEncoder.encode("password123"));
+            c.setRole(Role.CUSTOMER);
+            return userRepository.save(c);
+        });
+
         // --- Setup: one fresh OPEN ticket, and 5 distinct agent accounts ---
         Ticket ticket = Ticket.builder()
                 .title("Race condition test ticket")
                 .description("Testing concurrent claim")
                 .priority(TicketPriority.MEDIUM)
                 .category(TicketCategory.TECHNICAL)
-                .customerId(1L) // assumes a user with id 1 exists; adjust if needed
+                .customerId(customer.getId())
                 .status(TicketStatus.OPEN)
                 .build();
         Ticket savedTicket = ticketRepository.save(ticket);
@@ -59,8 +73,7 @@ public class RaceConditionTest {
             String email = "race-agent-" + i + "@test.com";
 
             futures.add(executor.submit(() -> {
-                // Each thread must set its OWN SecurityContext — it's ThreadLocal by default,
-                // meaning threads don't automatically share the main thread's authentication.
+                // Each thread must set its OWN SecurityContext — it's ThreadLocal by default
                 var auth = new UsernamePasswordAuthenticationToken(
                         email, null, List.of(new SimpleGrantedAuthority("ROLE_AGENT")));
                 SecurityContextHolder.getContext().setAuthentication(auth);
@@ -68,9 +81,9 @@ public class RaceConditionTest {
                 try {
                     startLatch.await(); // wait here until released simultaneously
                     agentService.claimTicket(savedTicket.getId());
-                    return "SUCCESS (" + email + ")";
+                    return "SUCCESS";
                 } catch (Exception e) {
-                    return "FAILED (" + email + "): " + e.getClass().getSimpleName() + " - " + e.getMessage();
+                    return "FAILED: " + e.getClass().getSimpleName() + " - " + e.getMessage();
                 }
             }));
         }
@@ -78,16 +91,27 @@ public class RaceConditionTest {
         Thread.sleep(200); // give all threads time to reach startLatch.await()
         startLatch.countDown(); // release all 5 threads at once
 
+        long successCount = 0;
+        long failureCount = 0;
         for (Future<String> future : futures) {
-            System.out.println(future.get());
+            String result = future.get();
+            System.out.println(result);
+            if (result.equals("SUCCESS")) {
+                successCount++;
+            } else {
+                failureCount++;
+            }
         }
 
         executor.shutdown();
 
+        // --- Verify assertions ---
+        assertEquals(1, successCount, "Exactly one agent should successfully claim the ticket");
+        assertEquals(agentCount - 1, failureCount, "All other agents should fail to claim the ticket");
+
         // --- Inspect final state ---
         Ticket finalTicket = ticketRepository.findById(savedTicket.getId()).orElseThrow();
-        System.out.println("Final ticket state: status=" + finalTicket.getStatus()
-                + ", assignedAgentId=" + finalTicket.getAssignedAgentId()
-                + ", version=" + finalTicket.getVersion());
+        assertEquals(TicketStatus.ASSIGNED, finalTicket.getStatus());
+        assertNotNull(finalTicket.getAssignedAgentId());
     }
 }

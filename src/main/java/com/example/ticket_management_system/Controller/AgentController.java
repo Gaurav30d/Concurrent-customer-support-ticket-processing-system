@@ -44,4 +44,9 @@ public class AgentController {
         Ticket ticket = agentService.updateStatus(id, request.getStatus());
         return ResponseEntity.ok(TicketResponse.fromEntity(ticket));
     }
+
+    @GetMapping("/rating")
+    public ResponseEntity<Double> getMyAverageRating(){
+        return ResponseEntity.ok(agentService.getMyAverageRating());
+    }
 }

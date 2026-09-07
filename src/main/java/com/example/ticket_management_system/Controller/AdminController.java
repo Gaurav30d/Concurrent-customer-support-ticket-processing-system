@@ -23,16 +23,13 @@ public class AdminController {
 
     private final AdminService adminService;
     private final TicketQueueManager queueManager;
-    private final ActiveProcessingTracker activeProcessingTracker;
-    private final ProcessingStats processingStats;
     private final ActiveProcessingTracker tracker;
     private final ProcessingStats stats;
 
-    public AdminController(AdminService adminService, TicketQueueManager queueManager, ActiveProcessingTracker activeProcessingTracker, ProcessingStats processingStats, ActiveProcessingTracker tracker, ProcessingStats stats) {
+    public AdminController(AdminService adminService, TicketQueueManager queueManager,
+                           ActiveProcessingTracker tracker, ProcessingStats stats) {
         this.adminService = adminService;
         this.queueManager = queueManager;
-        this.activeProcessingTracker = activeProcessingTracker;
-        this.processingStats = processingStats;
         this.tracker = tracker;
         this.stats = stats;
     }

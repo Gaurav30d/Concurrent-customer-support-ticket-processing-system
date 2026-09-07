@@ -9,6 +9,7 @@ import com.example.ticket_management_system.Repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,6 +46,7 @@ public class AgentService {
         return ticketRepository.findByAssignedAgentId(agent.getId());
     }
 
+    @Transactional
     public Ticket claimTicket(Long ticketId) {
         User agent = getCurrentAgent();
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -63,7 +65,7 @@ public class AgentService {
 
         Ticket saved;
         try {
-            saved = ticketRepository.save(ticket);
+            saved = ticketRepository.saveAndFlush(ticket);
         } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
             throw new TicketConflictException(
                     "This ticket was just claimed by another agent. Please refresh and try a different ticket.");
@@ -72,6 +74,8 @@ public class AgentService {
         ticketHistoryService.recordStatusChange(ticketId, agent.getId(), oldStatus, TicketStatus.ASSIGNED, "TICKET_CLAIMED");
         return saved;
     }
+
+    @Transactional
     public Ticket updateStatus(Long ticketId, TicketStatus newStatus) {
         User agent = getCurrentAgent();
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -98,6 +102,14 @@ public class AgentService {
         }
 
         return saved;
+    }
+    public Double getMyAverageRating() {
+        User agent = getCurrentAgent();
+        List<Ticket> rated = ticketRepository.findByAssignedAgentId(agent.getId()).stream()
+                .filter(t -> t.getRating() != null)
+                .toList();
+        if (rated.isEmpty()) return null;
+        return rated.stream().mapToInt(Ticket::getRating).average().orElse(0);
     }
 
     }

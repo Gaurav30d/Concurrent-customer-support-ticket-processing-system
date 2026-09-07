@@ -2,6 +2,7 @@ package com.example.ticket_management_system.Service;
 
 
 import com.example.ticket_management_system.DTOs.CreateTicketRequest;
+import com.example.ticket_management_system.DTOs.RateTicketRequest;
 import com.example.ticket_management_system.DTOs.UpdateTicketRequest;
 import com.example.ticket_management_system.Exception.InvalidStatusTransitionException;
 import com.example.ticket_management_system.Exception.TicketNotFoundException;
@@ -14,7 +15,9 @@ import com.example.ticket_management_system.Repository.TicketRepository;
 import com.example.ticket_management_system.Repository.UserRepository;
 import com.example.ticket_management_system.concurrency.TicketQueueManager;
 import com.example.ticket_management_system.concurrency.TicketTask;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +43,7 @@ public class TicketService {
     }
 
     public Ticket createTicket(CreateTicketRequest request) {
-        String email= SecurityContextHolder.getContext().getAuthentication().getName();
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         User customer = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
@@ -55,7 +58,18 @@ public class TicketService {
                 .build();
 
         Ticket saved = ticketRepository.save(ticket);
-        queueManager.enqueue(new TicketTask(saved.getId(), saved.getPriority()));
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    queueManager.enqueue(new TicketTask(saved.getId(), saved.getPriority()));
+                }
+            });
+        } else {
+            queueManager.enqueue(new TicketTask(saved.getId(), saved.getPriority()));
+        }
+
         return saved;
     }
     public Ticket getTicketById(Long ticketId) throws AccessDeniedException {
@@ -150,6 +164,26 @@ public class TicketService {
 
         ticket.setTitle(request.getTitle());
         ticket.setDescription(request.getDescription());
+        return ticketRepository.save(ticket);
+    }
+
+    public Ticket rateTicket(Long ticketId, RateTicketRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new TicketNotFoundException("Ticket not found"));
+
+        if (!ticket.getCustomerId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You can only rate your own tickets");
+        }
+        if (ticket.getStatus() != TicketStatus.CLOSED) {
+            throw new InvalidStatusTransitionException("You can only rate a CLOSED ticket");
+        }
+
+        ticket.setRating(request.getRating());
+        ticket.setFeedback(request.getFeedback());
         return ticketRepository.save(ticket);
     }
 

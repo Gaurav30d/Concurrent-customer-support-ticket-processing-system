@@ -1,14 +1,5 @@
 package com.example.ticket_management_system.DTOs;
 
-import com.example.ticket_management_system.Model.Ticket;
-import com.example.ticket_management_system.Model.TicketCategory;
-import com.example.ticket_management_system.Model.TicketPriority;
-import com.example.ticket_management_system.Model.TicketStatus;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDateTime;
-
 import com.example.ticket_management_system.Model.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,6 +18,9 @@ public class TicketResponse {
     private Long assignedAgentId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime dueBy;
+    private Integer rating;
+    private String feedback;
 
     public static TicketResponse fromEntity(Ticket ticket) {
         return new TicketResponse(
@@ -39,7 +33,10 @@ public class TicketResponse {
                 ticket.getCustomerId(),
                 ticket.getAssignedAgentId(),
                 ticket.getCreatedAt(),
-                ticket.getUpdatedAt()
+                ticket.getUpdatedAt(),
+                ticket.getDueBy(),
+                ticket.getRating(),
+                ticket.getFeedback()
         );
     }
 }

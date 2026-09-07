@@ -30,7 +30,8 @@ public class Ticket {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TicketStatus status=TicketStatus.OPEN;
+    @Builder.Default
+    private TicketStatus status = TicketStatus.OPEN;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -48,6 +49,9 @@ public class Ticket {
 
     private LocalDateTime resolvedAt;
 
+    private Integer rating;       // 1-5
+    private String feedback;      // optional comment
+
     @Version
     private Long version; // for optimistic locking later (Phase 15) — added now so the column exists from day one
 
@@ -62,6 +66,7 @@ public class Ticket {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    private LocalDateTime dueBy;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

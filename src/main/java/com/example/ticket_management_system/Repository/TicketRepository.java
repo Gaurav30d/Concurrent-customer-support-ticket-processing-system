@@ -1,6 +1,7 @@
 package com.example.ticket_management_system.Repository;
 
 import com.example.ticket_management_system.Model.Ticket;
+import com.example.ticket_management_system.Model.TicketStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +12,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByCustomerId(Long customerId);
     List<Ticket> findByAssignedAgentId(Long agentId);
     List<Ticket> findByAssignedAgentIdIsNull();
+    List<Ticket> findByStatus(TicketStatus status);
+    long countByAssignedAgentIdAndStatusIn(Long agentId, List<TicketStatus> statuses);
+
+    List<Ticket> findByAssignedAgentIdIsNullAndStatus(TicketStatus ticketStatus);
 }

@@ -2,7 +2,6 @@ package com.example.ticket_management_system.Controller;
 
 import com.example.ticket_management_system.Config.JwtUtil;
 import com.example.ticket_management_system.DTOs.*;
-import com.example.ticket_management_system.Model.Ticket;
 import com.example.ticket_management_system.Model.User;
 import com.example.ticket_management_system.Service.UserService;
 import jakarta.validation.Valid;
@@ -24,7 +23,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody RegisterRequest request){
-        User registeredUser = userService.Register(request);
+        User registeredUser = userService.register(request);
         return ResponseEntity.ok(UserResponse.fromEntity(registeredUser));
     }
 

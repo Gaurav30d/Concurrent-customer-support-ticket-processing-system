@@ -1,11 +1,11 @@
 package com.example.ticket_management_system.Service;
 
 import com.example.ticket_management_system.DTOs.RegisterRequest;
-import com.example.ticket_management_system.Exception.UserNotFoundException;
+import com.example.ticket_management_system.Exception.EmailAlreadyExistsException;
 import com.example.ticket_management_system.Model.Role;
 import com.example.ticket_management_system.Model.User;
 import com.example.ticket_management_system.Repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,14 +14,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository,PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User Register(RegisterRequest request) {
+    public User register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("Email already registered");
+            throw new EmailAlreadyExistsException("Email already registered: " + request.getEmail());
         }
 
         User user = new User();
@@ -32,12 +32,13 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
     public User validateCredentials(String email, String rawPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Invalid email or password"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-            throw new UserNotFoundException("Invalid email or password");
+            throw new BadCredentialsException("Invalid email or password");
         }
         return user;
     }

@@ -20,12 +20,28 @@ public class TicketTask implements Comparable<TicketTask> {
         return ticketId;
     }
 
+    public TicketPriority getPriority() {
+        return priority;
+    }
+
+    public LocalDateTime getEnqueuedAt() {
+        return enqueuedAt;
+    }
+
     @Override
     public int compareTo(TicketTask other) {
+        if (other == null) return 1;
         int priorityComparison = other.priority.ordinal() - this.priority.ordinal();
         if (priorityComparison != 0) {
             return priorityComparison;
         }
-        return this.enqueuedAt.compareTo(other.enqueuedAt);
+        int timeComparison = this.enqueuedAt.compareTo(other.enqueuedAt);
+        if (timeComparison != 0) {
+            return timeComparison;
+        }
+        if (this.ticketId != null && other.ticketId != null) {
+            return this.ticketId.compareTo(other.ticketId);
+        }
+        return 0;
     }
 }
