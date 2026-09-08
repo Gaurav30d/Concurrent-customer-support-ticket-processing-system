@@ -1,5 +1,5 @@
 # 🚀 ResolveIQ – Concurrent Customer Support Ticket Processing System
-
+#Link : https://resolveiq-ee34715kr-gauravs-projects-a9e5ce7f.vercel.app/
 > A multi-threaded, high-concurrency customer support platform built with **Spring Boot** and **Vite / Modern JavaScript**. It processes support tickets in parallel using priority queues, background worker threads, and live WebSocket telemetry.
 
 ---
